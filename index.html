@@ -82,6 +82,21 @@
   #userBar.on { display:flex;}
   #userBar img { width:28px; height:28px; border-radius:50%;}
   #userBar button { background:#e74c3c; color:#fff; border:none; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:12px;}
+
+  /* Two-tab switcher */
+  .tabbar { display:flex; gap:10px; justify-content:center; max-width:440px; margin:0 auto 22px; }
+  .tabbar button { flex:1; padding:11px 10px; border:none; border-radius:12px; cursor:pointer; font-size:15px; font-weight:700; background:#e9eef4; color:#5a6b7b; transition:all .15s; }
+  .tabbar button.active { background:#2980b9; color:#fff; box-shadow:0 3px 12px rgba(41,128,185,.35); }
+  body.dark .tabbar button { background:#262d36; color:#8b95a3; }
+  body.dark .tabbar button.active { background:#5fa9f7; color:#0f1419; }
+  /* Loan/insurance kind badges */
+  .kb { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .kb-ins { background:#f3e5f5; color:#8e44ad; }
+  .kb-loan { background:#fdebd0; color:#b9770e; }
+  .kb-mort { background:#fadbd8; color:#c0392b; }
+  body.dark .kb-ins { background:#2a2438; color:#c39bd3; }
+  body.dark .kb-loan { background:#3d3520; color:#f7c873; }
+  body.dark .kb-mort { background:#3d2424; color:#ff8a80; }
 </style>
 </head>
 <body>
@@ -104,11 +119,17 @@
 <h1>💰 שווי חסכונות - משפחת אליאס</h1>
 <div class="subtitle">סקירת חסכונות, פנסיות, השתלמות, וכיסוי ביטוחי</div>
 
+<div class="tabbar">
+  <button id="tabBtnSavings" class="active" onclick="switchTab('savings')">💰 חסכונות</button>
+  <button id="tabBtnLoans" onclick="switchTab('loans')">🏦 הלוואות</button>
+</div>
+
+<div id="tabSavings">
+
 <div class="kpis">
   <div class="kpi networth"><div class="label">שווי נטו</div><div class="value" id="kpiNet">0 ₪</div><div class="sub">סך חסכונות וצבירה</div></div>
   <div class="kpi monthly"><div class="label">הפקדה חודשית</div><div class="value" id="kpiMonthly">0 ₪</div><div class="sub" id="kpiYearly">0 ₪ בשנה</div></div>
-  <div class="kpi coverage"><div class="label">כיסוי ביטוחי</div><div class="value" id="kpiCoverage">0 ₪</div><div class="sub">סך פיצוי ביטוחי במקרה אסון</div></div>
-  <div class="kpi count"><div class="label">מספר נכסים</div><div class="value" id="kpiCount">0</div><div class="sub" id="kpiCountSub">0 חסכונות, 0 ביטוחים</div></div>
+  <div class="kpi count"><div class="label">מספר נכסים</div><div class="value" id="kpiCount">0</div><div class="sub" id="kpiCountSub">0 חסכונות</div></div>
 </div>
 
 <div class="grid">
@@ -120,7 +141,7 @@
   <div class="card full">
     <h2>רשימת נכסים
       <span class="toolbar">
-        <button class="btn btn-primary" onclick="openForm()">+ הוסף נכס</button>
+        <button class="btn btn-primary" onclick="openForm(undefined,'savings')">+ הוסף נכס</button>
         <button class="btn btn-secondary btn-sm" onclick="loadData()">🔄 רענן</button>
       </span>
     </h2>
@@ -157,6 +178,54 @@
     </div>
   </div>
 </div>
+</div><!-- /tabSavings -->
+
+<div id="tabLoans" style="display:none;">
+  <div class="kpis">
+    <div class="kpi" style="border-top:4px solid #e74c3c;"><div class="label">סך הלוואות ומשכנתא</div><div class="value" id="kpiDebt">0 ₪</div><div class="sub">יתרת חוב</div></div>
+    <div class="kpi" style="border-top:4px solid #e67e22;"><div class="label">החזר חודשי</div><div class="value" id="kpiRepay">0 ₪</div><div class="sub" id="kpiRepayYr">0 ₪ בשנה</div></div>
+    <div class="kpi" style="border-top:4px solid #9b59b6;"><div class="label">כיסוי ביטוחי</div><div class="value" id="kpiInsCov">0 ₪</div><div class="sub">סך פיצוי במקרה אסון</div></div>
+  </div>
+  <div class="grid">
+    <div class="card full">
+      <h2>הלוואות, משכנתאות וביטוחים
+        <span class="toolbar">
+          <button class="btn btn-primary" onclick="openForm(undefined,'loans')">+ הוסף</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadData()">🔄 רענן</button>
+        </span>
+      </h2>
+      <div class="filter-bar">
+        <input id="loanSearch" placeholder="חיפוש לפי מוצר, מוסד, פוליסה…">
+        <select id="loanFilterClient"><option value="">כל בני המשפחה</option></select>
+        <select id="loanFilterInstitution"><option value="">כל המוסדות</option></select>
+        <select id="loanFilterKind">
+          <option value="">הכל</option>
+          <option value="Loan">הלוואות</option>
+          <option value="Mortgage">משכנתאות</option>
+          <option value="insurance">ביטוחים</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="resetLoanFilters()">נקה סינונים</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th class="lsortable" data-sort="client">לקוח <span class="arrow"></span></th>
+            <th class="lsortable" data-sort="product">מוצר <span class="arrow"></span></th>
+            <th class="lsortable" data-sort="kind">סוג <span class="arrow"></span></th>
+            <th class="lsortable" data-sort="institution">מוסד <span class="arrow"></span></th>
+            <th>מספר פוליסה</th>
+            <th class="lsortable" data-sort="balance">סכום / כיסוי <span class="arrow"></span></th>
+            <th class="lsortable" data-sort="monthlyDeposit">החזר/פרמיה <span class="arrow"></span></th>
+            <th>ריבית</th>
+            <th>הערות</th>
+            <th>פעולות</th>
+          </tr></thead>
+          <tbody id="loansTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div><!-- /tabLoans -->
 
 <div class="modal-bg" id="detailBg" onclick="if(event.target.id==='detailBg')closeDetail()">
   <div class="modal">
@@ -183,6 +252,8 @@
         <div class="field"><label>סוג *</label><select id="f_kind" required>
           <option value="savings">חיסכון</option>
           <option value="insurance">ביטוח</option>
+          <option value="Loan">הלוואה</option>
+          <option value="Mortgage">משכנתא</option>
         </select></div>
         <div class="field"><label>מוסד *</label><input id="f_institution" required></div>
         <div class="field"><label>מעסיק / מקור</label><input id="f_employer"></div>
@@ -208,14 +279,21 @@
 // 2. GOOGLE_CLIENT_ID — same OAuth Client ID as the coupons site
 // 3. ALLOWED_EMAILS — same allowlist
 // ============================================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxYBeIu5g5uhzRq3SSxF108yYWyFn3eiKOa9XbY0pv1pZLXjB0Tskb5yt9xV_kz2Bny/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxYBeIu5g5uhzRq3SSxF108yYWyFn3eiKOa9XbY0pv1pZLXjB0Tskb5yt9xV_kz2Bny/exec';  // ← paste new deployment URL here
 const GOOGLE_CLIENT_ID = '404089340105-qcg1d6ha4dedppamov3hrqlm7on36lv2.apps.googleusercontent.com';
-const ALLOWED_EMAILS = 'eyran333@gmail.com,linoy_isr@yahoo.com,linoybarnea@gmail.com'.split(',').map(e => e.trim());
+const ALLOWED_EMAILS = [
+  'eyran333@gmail.com', 'linoy_isr@yahoo.com', 'linoybarnea@gmail.com'
+];
 
 let idToken = null;
 let currentUser = null;
 let assets = [];
+let loans = [];
 let filter = {type:null, value:null};
+let activeTab = 'savings';
+let formSrc = 'savings';
+let loanSort = {key:'balance', dir:-1};
+function recordsFor(src){ return src==='loans' ? loans : assets; }
 let sortState = {key:'balance', dir:-1};
 let charts = {};
 
@@ -263,31 +341,108 @@ async function loadData() {
     const res = await fetch(WEB_APP_URL + '?idToken=' + encodeURIComponent(idToken||''));
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'שגיאה לא ידועה');
-    assets = (data.assets || []).map(a => ({
-      ...a,
-      id:Number(a.id),
-      balance:Number(a.balance)||0,
-      monthlyDeposit:Number(a.monthlyDeposit)||0,
-      kind: (a.kind || 'savings').toLowerCase(),
-    }));
+    const norm = a => ({...a, id:Number(a.id), balance:Number(a.balance)||0, monthlyDeposit:Number(a.monthlyDeposit)||0});
+    assets = (data.savings || data.assets || []).map(a => ({...norm(a), kind:(a.kind||'savings'), _src:'savings'}));
+    loans = (data.loans || []).map(a => ({...norm(a), _src:'loans'}));   // keep original kind casing
     populateFilterOptions();
-    renderKpis(); renderCharts(); applyFilter();
+    renderKpis(); renderCharts(); applyFilter(); renderLoans();
     status('נטען ✓');
   } catch(e) { status('טעינה נכשלה: '+e.message, true); }
 }
 
 function renderKpis() {
-  const sav = assets.filter(a => a.kind === 'savings');
-  const ins = assets.filter(a => a.kind === 'insurance');
-  const net = sav.reduce((s,a)=>s+a.balance, 0);
+  const net = assets.reduce((s,a)=>s+a.balance, 0);
   const monthly = assets.reduce((s,a)=>s+a.monthlyDeposit, 0);
-  const cov = ins.reduce((s,a)=>s+a.balance, 0);
   document.getElementById('kpiNet').textContent = fmt(net);
   document.getElementById('kpiMonthly').textContent = fmt(monthly);
   document.getElementById('kpiYearly').textContent = fmt(monthly*12) + ' בשנה';
-  document.getElementById('kpiCoverage').textContent = fmt(cov);
   document.getElementById('kpiCount').textContent = assets.length;
-  document.getElementById('kpiCountSub').textContent = `${sav.length} חסכונות, ${ins.length} ביטוחים`;
+  const sub = document.getElementById('kpiCountSub'); if (sub) sub.textContent = assets.length + ' חסכונות';
+}
+
+// ===== Loans / mortgages / insurance tab =====
+function loanKindLabel(k){ return {insurance:'ביטוח', Loan:'הלוואה', Mortgage:'משכנתא'}[k] || k; }
+function loanKindBadge(k){ const c={insurance:'kb-ins',Loan:'kb-loan',Mortgage:'kb-mort'}[k]||''; return '<span class="kb '+c+'">'+loanKindLabel(k)+'</span>'; }
+
+function renderLoans() {
+  const debtRows = loans.filter(l => l.kind==='Loan' || l.kind==='Mortgage');
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('kpiDebt', fmt(debtRows.reduce((s,l)=>s+l.balance, 0)));
+  set('kpiRepay', fmt(debtRows.reduce((s,l)=>s+l.monthlyDeposit, 0)));
+  set('kpiRepayYr', fmt(debtRows.reduce((s,l)=>s+l.monthlyDeposit, 0)*12) + ' בשנה');
+  set('kpiInsCov', fmt(loans.filter(l => l.kind==='insurance').reduce((s,l)=>s+l.balance, 0)));
+  populateLoanFilterOptions();
+  applyLoanFilter();
+}
+
+function populateLoanFilterOptions() {
+  const fill = (id, vals, all) => {
+    const sel = document.getElementById(id); if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${all}</option>` + [...new Set(vals)].sort().map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    sel.value = cur;
+  };
+  fill('loanFilterClient', loans.map(l=>l.client).filter(Boolean), 'כל בני המשפחה');
+  fill('loanFilterInstitution', loans.map(l=>l.institution).filter(Boolean), 'כל המוסדות');
+}
+
+function applyLoanFilter() {
+  const q  = (document.getElementById('loanSearch').value||'').toLowerCase();
+  const fc = document.getElementById('loanFilterClient').value;
+  const fi = document.getElementById('loanFilterInstitution').value;
+  const fk = document.getElementById('loanFilterKind').value;
+  let rows = loans.filter(l => {
+    if (q && !(String(l.product).toLowerCase().includes(q) || String(l.institution).toLowerCase().includes(q) || String(l.policy).toLowerCase().includes(q))) return false;
+    if (fc && l.client !== fc) return false;
+    if (fi && l.institution !== fi) return false;
+    if (fk && l.kind !== fk) return false;
+    return true;
+  });
+  const k = loanSort.key, d = loanSort.dir;
+  if (k) rows.sort((a,b) => {
+    let va = a[k], vb = b[k];
+    if (typeof va === 'number' && typeof vb === 'number') return (va-vb)*d;
+    return String(va||'').localeCompare(String(vb||''), 'he') * d;
+  });
+  const tb = document.getElementById('loansTbody');
+  if (!tb) return;
+  tb.innerHTML = rows.length ? rows.map(l => `
+    <tr onclick="showDetail(${l.id},'loans')">
+      <td>${escapeHtml(l.client)}</td>
+      <td>${escapeHtml(l.product)}</td>
+      <td>${loanKindBadge(l.kind)}</td>
+      <td>${escapeHtml(l.institution)}</td>
+      <td>${escapeHtml(l.policy) || '—'}</td>
+      <td><strong>${fmt(l.balance)}</strong></td>
+      <td>${l.monthlyDeposit ? fmt(l.monthlyDeposit) : '—'}</td>
+      <td>${fmtFee(l.mgmtFee)}</td>
+      <td>${escapeHtml(l.notes) || '—'}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="row-actions">
+          <button class="btn btn-edit btn-sm" onclick="openForm(${l.id},'loans')">ערוך</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAsset(${l.id},'loans')">מחק</button>
+        </div>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="10" style="text-align:center;color:#95a5a6;padding:20px;">אין נתונים</td></tr>';
+  document.querySelectorAll('th.lsortable').forEach(th => {
+    const ar = th.querySelector('.arrow');
+    if (ar) ar.textContent = th.dataset.sort === loanSort.key ? (loanSort.dir===1 ? '▲' : '▼') : '';
+  });
+}
+
+function resetLoanFilters() {
+  document.getElementById('loanSearch').value = '';
+  ['loanFilterClient','loanFilterInstitution','loanFilterKind'].forEach(id=>document.getElementById(id).value='');
+  loanSort = {key:'balance', dir:-1};
+  applyLoanFilter();
+}
+
+function switchTab(t) {
+  activeTab = t;
+  document.getElementById('tabSavings').style.display = (t==='savings') ? '' : 'none';
+  document.getElementById('tabLoans').style.display   = (t==='loans')   ? '' : 'none';
+  document.getElementById('tabBtnSavings').classList.toggle('active', t==='savings');
+  document.getElementById('tabBtnLoans').classList.toggle('active', t==='loans');
 }
 
 function populateFilterOptions() {
@@ -358,7 +513,7 @@ function renderTable(rows) {
   const tb = document.getElementById('tbody');
   if (!rows.length) { tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#95a5a6;padding:20px;">אין נכסים</td></tr>'; return; }
   tb.innerHTML = rows.map(a => `
-    <tr onclick="showDetail(${a.id})">
+    <tr onclick="showDetail(${a.id},'savings')">
       <td>${escapeHtml(a.client)}</td>
       <td>${escapeHtml(a.product)}</td>
       <td>${kindBadge(a.kind)}</td>
@@ -371,39 +526,44 @@ function renderTable(rows) {
       <td>${escapeHtml(fmtFee(a.mgmtFee))}</td>
       <td onclick="event.stopPropagation()">
         <div class="row-actions">
-          <button class="btn btn-edit btn-sm" onclick="openForm(${a.id})">ערוך</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteAsset(${a.id})">מחק</button>
+          <button class="btn btn-edit btn-sm" onclick="openForm(${a.id},'savings')">ערוך</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAsset(${a.id},'savings')">מחק</button>
         </div>
       </td>
     </tr>`).join('');
 }
 
-function showDetail(id) {
-  const a = assets.find(x => x.id===id); if (!a) return;
+function showDetail(id, src) {
+  src = src || 'savings';
+  const a = recordsFor(src).find(x => x.id===id); if (!a) return;
+  const badge = (src==='loans') ? loanKindBadge(a.kind) : kindBadge(a.kind);
   document.getElementById('detailTitle').textContent = `${a.product} — ${a.client}`;
   const fields = [
-    ['לקוח', a.client], ['מוצר', a.product], ['סוג', kindBadge(a.kind)],
+    ['לקוח', a.client], ['מוצר', a.product], ['סוג', badge],
     ['מוסד', a.institution], ['מעסיק', a.employer || '—'], ['פוליסה', a.policy || '—'],
-    ['יתרה / סכום ביטוח', '<strong>'+fmt(a.balance)+'</strong>'],
-    ['הפקדה חודשית', a.monthlyDeposit ? fmt(a.monthlyDeposit) : '—'],
-    ['דמי ניהול', fmtFee(a.mgmtFee)], ['מסלול', a.track || '—'],
+    ['סכום / יתרה / כיסוי', '<strong>'+fmt(a.balance)+'</strong>'],
+    ['תשלום / הפקדה חודשית', a.monthlyDeposit ? fmt(a.monthlyDeposit) : '—'],
+    ['ריבית / דמי ניהול', fmtFee(a.mgmtFee)], ['מסלול', a.track || '—'],
     ['סוכן', a.agent || '—'], ['הערות', escapeHtml(a.notes) || '—'],
   ];
   document.getElementById('detailBody').innerHTML = fields.map(([l,v])=>`<div class="row"><div class="label">${l}</div><div class="val">${v}</div></div>`).join('');
-  document.getElementById('detailEditBtn').onclick = () => { closeDetail(); openForm(id); };
-  document.getElementById('detailDelBtn').onclick = () => { closeDetail(); deleteAsset(id); };
+  document.getElementById('detailEditBtn').onclick = () => { closeDetail(); openForm(id, src); };
+  document.getElementById('detailDelBtn').onclick = () => { closeDetail(); deleteAsset(id, src); };
   document.getElementById('detailBg').classList.add('open');
 }
 function closeDetail() { document.getElementById('detailBg').classList.remove('open'); }
 
-function openForm(id) {
-  const isEdit = id !== undefined;
-  const a = isEdit ? assets.find(x=>x.id===id) : null;
-  document.getElementById('formTitle').textContent = isEdit ? 'ערוך נכס' : 'הוסף נכס';
+function openForm(id, src) {
+  const isEdit = (id !== undefined && id !== null);
+  formSrc = isEdit ? (src || 'savings') : (src || activeTab || 'savings');
+  const a = isEdit ? recordsFor(formSrc).find(x=>x.id===id) : null;
+  const noun = (formSrc==='loans') ? 'רשומה' : 'נכס';
+  document.getElementById('formTitle').textContent = (isEdit ? 'ערוך ' : 'הוסף ') + noun;
   document.getElementById('f_id').value = isEdit ? id : '';
+  const defKind = (formSrc==='loans') ? 'Loan' : 'savings';
   ['client','product','kind','institution','employer','policy','balance','monthlyDeposit','mgmtFee','track','agent','notes'].forEach(k=>{
     const el = document.getElementById('f_'+k);
-    el.value = a ? (a[k] ?? '') : (k==='kind' ? 'savings' : (k==='monthlyDeposit'?0:''));
+    el.value = a ? (a[k] ?? '') : (k==='kind' ? defKind : (k==='monthlyDeposit'?0:''));
   });
   document.getElementById('formBg').classList.add('open');
 }
@@ -420,17 +580,18 @@ async function saveAsset(e) {
   data.monthlyDeposit = parseFloat(document.getElementById('f_monthlyDeposit').value) || 0;
   const btn = document.getElementById('saveBtn'); btn.disabled = true;
   try {
-    if (idVal !== '') await api('update', {asset: {id:parseInt(idVal), ...data}});
-    else await api('add', {asset: data});
+    if (idVal !== '') await api('update', {sheet: formSrc, asset: {id:parseInt(idVal), ...data}});
+    else await api('add', {sheet: formSrc, asset: data});
     closeForm(); status('נשמר ✓'); await loadData();
   } catch(err) { status('שמירה נכשלה: '+err.message, true); }
   finally { btn.disabled = false; }
 }
 
-async function deleteAsset(id) {
-  const a = assets.find(x=>x.id===id); if (!a) return;
+async function deleteAsset(id, src) {
+  src = src || 'savings';
+  const a = recordsFor(src).find(x=>x.id===id); if (!a) return;
   if (!confirm(`למחוק "${a.product} — ${a.client}"?`)) return;
-  try { await api('delete', {id}); status('נמחק ✓'); await loadData(); }
+  try { await api('delete', {sheet: src, id}); status('נמחק ✓'); await loadData(); }
   catch(err) { status('מחיקה נכשלה: '+err.message, true); }
 }
 
@@ -443,6 +604,21 @@ document.querySelectorAll('th.sortable').forEach(th => {
     if (sortState.key === k) sortState.dir = -sortState.dir;
     else { sortState.key = k; sortState.dir = -1; }
     applyFilter();
+  });
+});
+
+// Loans tab controls
+const _ls = document.getElementById('loanSearch');
+if (_ls) _ls.addEventListener('input', applyLoanFilter);
+['loanFilterClient','loanFilterInstitution','loanFilterKind'].forEach(id => {
+  const el = document.getElementById(id); if (el) el.addEventListener('change', applyLoanFilter);
+});
+document.querySelectorAll('th.lsortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.sort;
+    if (loanSort.key === k) loanSort.dir = -loanSort.dir;
+    else { loanSort.key = k; loanSort.dir = -1; }
+    applyLoanFilter();
   });
 });
 
